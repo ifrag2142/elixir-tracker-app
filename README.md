@@ -132,13 +132,8 @@ npm start
 # or
 yarn start
 # For Vite: npm run dev or yarn dev
+```
 This will open the application in your browser, usually at http://localhost:3000. The page will reload if you make edits.
----
-
-### Section 7: Usage
-
-```markdown
----
 
 ## Usage
 
