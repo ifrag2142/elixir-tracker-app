@@ -19,11 +19,11 @@ const ELIXIR_TIERS_CONFIG = [
 
 // Elixir Types Configuration
 const ELIXIR_TYPES_CONFIG = [
-  { name: 'CD', color: 'bg-blue-500' },
+  { name: 'CD', color: 'bg-pink-500' },
   { name: 'ATK', color: 'bg-red-500' },
-  { name: 'TD', color: 'bg-green-500' },
-  { name: 'SD', color: 'bg-yellow-500' },
-  { name: 'HP', color: 'bg-purple-500' },
+  { name: 'TD', color: 'bg-blue-500' },
+  { name: 'SD', color: 'bg-purple-500' },
+  { name: 'HP', color: 'bg-green-500' },
 ];
 
 // Helper to get ref points by tier name
@@ -72,28 +72,43 @@ const ElixirInputItem = React.memo(({ elixirType, tier, quantity, onInventoryCha
 });
 
 // Elixir Type Inventory Component
-const ElixirTypeInventory = React.memo(({ elixirTypeConfig, inventoryForType, onInventoryChange, totalRefPointsForType }) => {
+const ElixirTypeInventory = React.memo(({ elixirTypeConfig, inventoryForType, onInventoryChange, totalRefPointsForType, onClearTypeInventory }) => {
   const [isOpen, setIsOpen] = useState(false);
-
   const toggleOpen = useCallback(() => {
     setIsOpen(prev => !prev);
   }, []);
-
+  const handleClear = useCallback(() => {
+    onClearTypeInventory(elixirTypeConfig.name);
+  }, [elixirTypeConfig.name, onClearTypeInventory]);
   return (
-    <div className="mb-4 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 overflow-auto">
-      <button
+    <div className="mb-4 bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div // Use a div here to contain button and clear button
         className="flex justify-between items-center w-full p-4 text-left font-bold text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-t-lg transition-all duration-200"
-        onClick={toggleOpen}
-        aria-expanded={isOpen}
-        aria-controls={`elixir-type-${elixirTypeConfig.name}-inventory`}
       >
-        <span className="flex items-center gap-2">
+        <button // Main toggle button for accordion
+          onClick={toggleOpen}
+          aria-expanded={isOpen}
+          aria-controls={`elixir-type-${elixirTypeConfig.name}-inventory`}
+          className="flex-grow flex items-center gap-2 focus:outline-none" // Added flex-grow
+        >
           <span className={`w-3 h-3 rounded-full ${elixirTypeConfig.color}`}></span>
           {elixirTypeConfig.name} Elixirs
-        </span>
-        <span className="text-sm text-gray-600 dark:text-gray-400">Total: {totalRefPointsForType.toLocaleString()} Ref Points</span>
-        {isOpen ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
-      </button>
+        </button>
+        <span className="text-sm text-gray-600 dark:text-gray-400 mr-4">Total: {totalRefPointsForType.toLocaleString()} Ref Points</span>
+        <button // Clear button
+          onClick={handleClear}
+          className="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-400"
+          aria-label={`Clear all ${elixirTypeConfig.name} elixirs`}
+        >
+          Clear
+        </button>
+        <button // Chevron for accordion
+          onClick={toggleOpen}
+          className="ml-2 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        >
+          {isOpen ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+        </button>
+      </div>
       <div
         id={`elixir-type-${elixirTypeConfig.name}-inventory`}
         className={`transition-all duration-300 ease-in-out overflow-auto ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`} // Max height for scrollability
@@ -115,7 +130,7 @@ const ElixirTypeInventory = React.memo(({ elixirTypeConfig, inventoryForType, on
 });
 
 // Elixir Inventory Management Interface Component
-const ElixirInventory = React.memo(({ inventory, onInventoryChange, totalRefPointsPerType }) => {
+const ElixirInventory = React.memo(({ inventory, onInventoryChange, totalRefPointsPerType, onClearTypeInventory }) => {
   return (
     <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden mb-6 border border-gray-200 dark:border-gray-700 p-4 overflow-y-auto"> {/* Overall scrollability */}
       <h2 className="text-xl font-bold p-4 -mx-4 -mt-4 mb-4 bg-indigo-600 text-white rounded-t-xl">Your Elixir Inventories</h2>
@@ -124,8 +139,9 @@ const ElixirInventory = React.memo(({ inventory, onInventoryChange, totalRefPoin
           key={typeConfig.name}
           elixirTypeConfig={typeConfig}
           inventoryForType={inventory[typeConfig.name] || {}}
-          onInventoryChange={onInventoryChange} // This is the corrected line
+          onInventoryChange={onInventoryChange}
           totalRefPointsForType={totalRefPointsPerType[typeConfig.name] || 0}
+          onClearTypeInventory={onClearTypeInventory}
         />
       ))}
     </div>
@@ -182,7 +198,8 @@ const TotalSummaryDisplay = React.memo(({ totalOverallRefPoints, totalRefPointsP
 const OptimalSelectionCalculator = React.memo(({ inventory, totalOverallRefPoints }) => {
   const [targetRefPoints, setTargetRefPoints] = useState('');
   const [selectedElixirTypes, setSelectedElixirTypes] = useState(() =>
-    new Set(ELIXIR_TYPES_CONFIG.map(type => type.name))
+    // new Set(ELIXIR_TYPES_CONFIG.map(type => type.name))
+    new Set()
   );
   const [resultElixirs, setResultElixirs] = useState({});
   const [achievedPoints, setAchievedPoints] = useState(0);
@@ -267,34 +284,34 @@ const OptimalSelectionCalculator = React.memo(({ inventory, totalOverallRefPoint
     const selectedElixirs = {}; // { type: { tier: quantity } }
 
     for (const elixir of availableElixirs) {
-        // If we've already met or exceeded the target, we break.
-        // The algorithm aims for the closest number higher, so it will take just enough to cross the target.
-        if (currentAchievedPoints >= target) {
-            break; 
-        }
+      // If we've already met or exceeded the target, we break.
+      // The algorithm aims for the closest number higher, so it will take just enough to cross the target.
+      if (currentAchievedPoints >= target) {
+        break;
+      }
 
-        const refPointsPerElixir = elixir.refPoints;
-        const availableQuantity = elixir.quantity;
+      const refPointsPerElixir = elixir.refPoints;
+      const availableQuantity = elixir.quantity;
 
-        // How many more points do we minimally need to reach or exceed the target?
-        const pointsNeededToMeetTarget = target - currentAchievedPoints;
-        
-        let numToTake = 0;
-        if (pointsNeededToMeetTarget > 0) {
-            numToTake = Math.ceil(pointsNeededToMeetTarget / refPointsPerElixir);
-        } else {
-            numToTake = 0; // Should not be hit due to `currentAchievedPoints >= target` break.
-        }
-        
-        numToTake = Math.min(numToTake, availableQuantity);
+      // How many more points do we minimally need to reach or exceed the target?
+      const pointsNeededToMeetTarget = target - currentAchievedPoints;
 
-        if (numToTake > 0) {
-            if (!selectedElixirs[elixir.type]) {
-                selectedElixirs[elixir.type] = {};
-            }
-            selectedElixirs[elixir.type][elixir.tier] = (selectedElixirs[elixir.type][elixir.tier] || 0) + numToTake;
-            currentAchievedPoints += numToTake * refPointsPerElixir;
+      let numToTake = 0;
+      if (pointsNeededToMeetTarget > 0) {
+        numToTake = Math.ceil(pointsNeededToMeetTarget / refPointsPerElixir);
+      } else {
+        numToTake = 0; // Should not be hit due to `currentAchievedPoints >= target` break.
+      }
+
+      numToTake = Math.min(numToTake, availableQuantity);
+
+      if (numToTake > 0) {
+        if (!selectedElixirs[elixir.type]) {
+          selectedElixirs[elixir.type] = {};
         }
+        selectedElixirs[elixir.type][elixir.tier] = (selectedElixirs[elixir.type][elixir.tier] || 0) + numToTake;
+        currentAchievedPoints += numToTake * refPointsPerElixir;
+      }
     }
 
     setResultElixirs(selectedElixirs);
@@ -333,7 +350,7 @@ const OptimalSelectionCalculator = React.memo(({ inventory, totalOverallRefPoint
       <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
         <Calculator size={24} className="text-indigo-600 dark:text-indigo-400" /> Optimal Elixir Selection
       </h2>
-      
+
       <div className="mb-4">
         <label htmlFor="targetPoints" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Target Reference Points
@@ -366,11 +383,10 @@ const OptimalSelectionCalculator = React.memo(({ inventory, totalOverallRefPoint
                 onChange={(e) => handleTypeSelectionChange(typeConfig.name, e.target.checked)}
                 className="sr-only" // Hide default checkbox
               />
-              <span className={`w-5 h-5 rounded flex items-center justify-center border-2 transition-all duration-150 ease-in-out ${
-                selectedElixirTypes.has(typeConfig.name)
+              <span className={`w-5 h-5 rounded flex items-center justify-center border-2 transition-all duration-150 ease-in-out ${selectedElixirTypes.has(typeConfig.name)
                   ? 'bg-indigo-600 border-indigo-600 text-white'
                   : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400'
-              }`}>
+                }`}>
                 {selectedElixirTypes.has(typeConfig.name) ? <CheckSquare size={16} /> : <Square size={16} />}
               </span>
               <span className="text-gray-700 dark:text-gray-300 text-sm">{typeConfig.name}</span>
@@ -635,6 +651,20 @@ const ElixirTrackerApp = () => {
     }));
   }, []);
 
+  // Handler for clearing all elixirs of a specific type
+  const handleClearTypeInventory = useCallback((elixirTypeToClear) => {
+    setInventory(prevInventory => {
+      const newTypeInventory = {};
+      ELIXIR_TIERS_CONFIG.forEach(tier => {
+        newTypeInventory[tier.name] = 0; // Set all tiers for this type to 0
+      });
+      return {
+        ...prevInventory,
+        [elixirTypeToClear]: newTypeInventory,
+      };
+    });
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-4 sm:p-6 font-sans">
       <header className="text-center mb-8">
@@ -653,6 +683,7 @@ const ElixirTrackerApp = () => {
             inventory={inventory}
             onInventoryChange={handleInventoryChange}
             totalRefPointsPerType={totalRefPointsPerType}
+            onClearTypeInventory={handleClearTypeInventory}
           />
         </section>
 
