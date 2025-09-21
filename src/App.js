@@ -26,12 +26,6 @@ const ELIXIR_TYPES_CONFIG = [
   { name: 'HP', color: 'bg-green-500' },
 ];
 
-// Helper to get ref points by tier name
-const getRefPointsForTier = (tierName) => {
-  const tier = ELIXIR_TIERS_CONFIG.find(t => t.name === tierName);
-  return tier ? tier.refPoints : 0;
-};
-
 // --- Components ---
 
 // Elixir Input Item Component
