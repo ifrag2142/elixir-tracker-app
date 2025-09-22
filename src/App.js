@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { ChevronDown, ChevronRight, Calculator, CheckSquare, Square, Info, Divide, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, Calculator, Info, Divide, X } from 'lucide-react';
 
 // Elixir Tier Configuration
 const ELIXIR_TIERS_CONFIG = [
@@ -25,6 +25,35 @@ const ELIXIR_TYPES_CONFIG = [
   { name: 'SD', color: 'bg-purple-500' },
   { name: 'HP', color: 'bg-green-500' },
 ];
+
+const ELIXIR_ABSORB_STATS_CONFIG = {
+  'ATK': {
+    'Common': 100, 'Good': 200, 'Sturdy': 300, 'Rare': 400, 'Perfect': 600,
+    'Scarce': 800, 'Epic': 1200, 'Legendary': 1600, 'Immortal': 2400,
+    'Myth': 4000, 'Eternal': 6000
+  },
+  'CD': {
+    'Common': 0.01, 'Good': 0.02, 'Sturdy': 0.03, 'Rare': 0.04, 'Perfect': 0.05,
+    'Scarce': 0.06, 'Epic': 0.08, 'Legendary': 0.10, 'Immortal': 0.14,
+    'Myth': 0.20, 'Eternal': 0.28
+  },
+  'TD': {
+    'Common': 0.001, 'Good': 0.002, 'Sturdy': 0.003, 'Rare': 0.004, 'Perfect': 0.005,
+    'Scarce': 0.006, 'Epic': 0.008, 'Legendary': 0.010, 'Immortal': 0.014,
+    'Myth': 0.020, 'Eternal': 0.028
+  },
+  'SD': {
+    'Common': 0.002, 'Good': 0.004, 'Sturdy': 0.006, 'Rare': 0.008, 'Perfect': 0.010,
+    'Scarce': 0.012, 'Epic': 0.016, 'Legendary': 0.020, 'Immortal': 0.028,
+    'Myth': 0.040, 'Eternal': 0.056
+  },
+  'HP': {
+    'Common': 10000, 'Good': 20000, 'Sturdy': 30000, 'Rare': 40000, 'Perfect': 60000,
+    'Scarce': 80000, 'Epic': 120000, 'Legendary': 160000, 'Immortal': 240000,
+    'Myth': 400000, 'Eternal': 600000
+  }
+};
+
 
 // --- Components ---
 
@@ -86,9 +115,9 @@ const ElixirTypeInventory = React.memo(({ elixirTypeConfig, inventoryForType, on
           className="flex-grow flex items-center gap-2 focus:outline-none" // Added flex-grow
         >
           <span className={`w-3 h-3 rounded-full ${elixirTypeConfig.color}`}></span>
-          {elixirTypeConfig.name} Elixirs
+          {elixirTypeConfig.name}
         </button>
-        <span className="text-sm text-gray-600 dark:text-gray-400 mr-4">Total: {totalRefPointsForType.toLocaleString()} Ref Points</span>
+        <span className="text-sm text-gray-600 dark:text-gray-400 mr-4">{totalRefPointsForType.toLocaleString()} Points</span>
         <button // Clear button
           onClick={handleClear}
           className="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-400"
@@ -124,10 +153,19 @@ const ElixirTypeInventory = React.memo(({ elixirTypeConfig, inventoryForType, on
 });
 
 // Elixir Inventory Management Interface Component
-const ElixirInventory = React.memo(({ inventory, onInventoryChange, totalRefPointsPerType, onClearTypeInventory }) => {
+const ElixirInventory = React.memo(({ inventory, onInventoryChange, totalRefPointsPerType, onClearAllElixirs }) => {
   return (
-    <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden mb-6 border border-gray-200 dark:border-gray-700 p-4 overflow-y-auto"> {/* Overall scrollability */}
-      <h2 className="text-xl font-bold p-4 -mx-4 -mt-4 mb-4 bg-indigo-600 text-white rounded-t-xl">Your Elixir Inventories</h2>
+    <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden mb-6 border border-gray-200 dark:border-gray-700 p-4 max-h-[calc(100vh-200px)] overflow-y-auto">
+      <div className="flex items-center justify-between p-4 -mx-4 -mt-4 mb-4 bg-indigo-600 text-white rounded-t-xl">
+        <h2 className="text-xl font-bold">Elixir</h2>
+        <button
+          onClick={onClearAllElixirs} // Call the new handler
+          className="px-3 py-1 bg-indigo-500 hover:bg-indigo-700 text-white text-sm font-medium rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          aria-label="Clear all elixir inputs"
+        >
+          Clear All
+        </button>
+      </div>
       {ELIXIR_TYPES_CONFIG.map((typeConfig) => (
         <ElixirTypeInventory
           key={typeConfig.name}
@@ -135,7 +173,6 @@ const ElixirInventory = React.memo(({ inventory, onInventoryChange, totalRefPoin
           inventoryForType={inventory[typeConfig.name] || {}}
           onInventoryChange={onInventoryChange}
           totalRefPointsForType={totalRefPointsPerType[typeConfig.name] || 0}
-          onClearTypeInventory={onClearTypeInventory}
         />
       ))}
     </div>
@@ -152,7 +189,7 @@ const TotalSummaryDisplay = React.memo(({ totalOverallRefPoints, totalRefPointsP
 
   return (
     <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 text-center border border-gray-200 dark:border-gray-700 mb-6">
-      <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">Overall Total Reference Points</h2>
+      <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">Overall Total Ref Points</h2>
       <p className="text-5xl font-extrabold text-indigo-600 dark:text-indigo-400 transition-transform duration-300 hover:scale-105 mb-4">
         {totalOverallRefPoints.toLocaleString()}
       </p>
@@ -192,8 +229,7 @@ const TotalSummaryDisplay = React.memo(({ totalOverallRefPoints, totalRefPointsP
 const OptimalSelectionCalculator = React.memo(({ inventory, totalOverallRefPoints }) => {
   const [targetRefPoints, setTargetRefPoints] = useState('');
   const [selectedElixirTypes, setSelectedElixirTypes] = useState(() =>
-    // new Set(ELIXIR_TYPES_CONFIG.map(type => type.name))
-    new Set()
+    new Set() // Initialize as empty set as per your last request
   );
   const [resultElixirs, setResultElixirs] = useState({});
   const [achievedPoints, setAchievedPoints] = useState(0);
@@ -207,13 +243,13 @@ const OptimalSelectionCalculator = React.memo(({ inventory, totalOverallRefPoint
     }
   }, []);
 
-  const handleTypeSelectionChange = useCallback((typeName, isChecked) => {
+  const handleTypeSelectionChange = useCallback((typeName) => {
     setSelectedElixirTypes(prev => {
       const newSelection = new Set(prev);
-      if (isChecked) {
-        newSelection.add(typeName);
-      } else {
+      if (newSelection.has(typeName)) {
         newSelection.delete(typeName);
+      } else {
+        newSelection.add(typeName);
       }
       return newSelection;
     });
@@ -278,8 +314,6 @@ const OptimalSelectionCalculator = React.memo(({ inventory, totalOverallRefPoint
     const selectedElixirs = {}; // { type: { tier: quantity } }
 
     for (const elixir of availableElixirs) {
-      // If we've already met or exceeded the target, we break.
-      // The algorithm aims for the closest number higher, so it will take just enough to cross the target.
       if (currentAchievedPoints >= target) {
         break;
       }
@@ -287,14 +321,13 @@ const OptimalSelectionCalculator = React.memo(({ inventory, totalOverallRefPoint
       const refPointsPerElixir = elixir.refPoints;
       const availableQuantity = elixir.quantity;
 
-      // How many more points do we minimally need to reach or exceed the target?
       const pointsNeededToMeetTarget = target - currentAchievedPoints;
 
       let numToTake = 0;
       if (pointsNeededToMeetTarget > 0) {
         numToTake = Math.ceil(pointsNeededToMeetTarget / refPointsPerElixir);
       } else {
-        numToTake = 0; // Should not be hit due to `currentAchievedPoints >= target` break.
+        numToTake = 0;
       }
 
       numToTake = Math.min(numToTake, availableQuantity);
@@ -315,7 +348,7 @@ const OptimalSelectionCalculator = React.memo(({ inventory, totalOverallRefPoint
       setMessage(`Successfully achieved exactly ${currentAchievedPoints.toLocaleString()} reference points.`);
     } else if (currentAchievedPoints > target) {
       setMessage(`Achieved ${currentAchievedPoints.toLocaleString()} reference points (Target: ${target.toLocaleString()}). This is the closest value higher than your target.`);
-    } else { // currentAchievedPoints < target (should ideally be caught earlier if target > total available)
+    } else {
       setMessage(`Could not reach target. Achieved ${currentAchievedPoints.toLocaleString()} points. Max possible with selected types: ${currentTotalSelectedInventoryRefPoints.toLocaleString()}.`);
     }
     setIsCalculating(false);
@@ -338,16 +371,15 @@ const OptimalSelectionCalculator = React.memo(({ inventory, totalOverallRefPoint
     };
   }, [targetRefPoints, selectedElixirTypes, calculateOptimalSelection]);
 
-
   return (
     <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700">
       <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
-        <Calculator size={24} className="text-indigo-600 dark:text-indigo-400" /> Optimal Elixir Selection
+        <Calculator size={24} className="text-indigo-600 dark:text-indigo-400" /> Ref Target Calculator
       </h2>
 
       <div className="mb-4">
         <label htmlFor="targetPoints" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Target Reference Points
+          Target Ref Points
         </label>
         <input
           id="targetPoints"
@@ -360,7 +392,7 @@ const OptimalSelectionCalculator = React.memo(({ inventory, totalOverallRefPoint
           aria-describedby="target-points-help"
         />
         <p id="target-points-help" className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Enter the reference points you wish to achieve.
+          Enter the ref points you wish to achieve.
         </p>
       </div>
 
@@ -368,28 +400,32 @@ const OptimalSelectionCalculator = React.memo(({ inventory, totalOverallRefPoint
         <p className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Include Elixir Types:
         </p>
-        <div className="flex flex-wrap gap-x-4 gap-y-2">
-          {ELIXIR_TYPES_CONFIG.map(typeConfig => (
-            <label key={typeConfig.name} className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={selectedElixirTypes.has(typeConfig.name)}
-                onChange={(e) => handleTypeSelectionChange(typeConfig.name, e.target.checked)}
-                className="sr-only" // Hide default checkbox
-              />
-              <span className={`w-5 h-5 rounded flex items-center justify-center border-2 transition-all duration-150 ease-in-out ${selectedElixirTypes.has(typeConfig.name)
-                  ? 'bg-indigo-600 border-indigo-600 text-white'
-                  : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400'
-                }`}>
-                {selectedElixirTypes.has(typeConfig.name) ? <CheckSquare size={16} /> : <Square size={16} />}
-              </span>
-              <span className="text-gray-700 dark:text-gray-300 text-sm">{typeConfig.name}</span>
-            </label>
-          ))}
+        <div className="flex flex-wrap gap-x-2 gap-y-2">
+          {ELIXIR_TYPES_CONFIG.map(typeConfig => {
+            const isSelected = selectedElixirTypes.has(typeConfig.name);
+            return (
+              <button
+                key={typeConfig.name}
+                type="button"
+                onClick={() => handleTypeSelectionChange(typeConfig.name)}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-full border transition-all duration-150 ease-in-out
+                  ${isSelected
+                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-md'
+                    : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }
+                  focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900
+                `}
+                aria-pressed={isSelected}
+              >
+                <span className={`w-3 h-3 rounded-full ${typeConfig.color}`}></span>
+                <span className="text-sm font-medium">{typeConfig.name}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      <button
+      {/* <button
         onClick={calculateOptimalSelection}
         disabled={isCalculating || targetRefPoints === '' || parseInt(targetRefPoints, 10) <= 0 || selectedElixirTypes.size === 0}
         className="w-full px-6 py-3 bg-indigo-600 text-white font-semibold rounded-md shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
@@ -400,7 +436,7 @@ const OptimalSelectionCalculator = React.memo(({ inventory, totalOverallRefPoint
             <Calculator size={20} /> Calculate Optimal Usage
           </>
         )}
-      </button>
+      </button> */}
 
       {message && (
         <p className={`mt-4 flex items-center gap-2 text-sm font-medium ${achievedPoints < parseInt(targetRefPoints, 10) ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
@@ -426,7 +462,10 @@ const OptimalSelectionCalculator = React.memo(({ inventory, totalOverallRefPoint
                     const quantity = tiersForType[tier.name];
                     return quantity > 0 ? (
                       <li key={tier.name} className="flex justify-between text-gray-600 dark:text-gray-400">
-                        <span>{tier.name}:</span>
+                        <span className="flex items-center gap-1"> {/* Added a wrapper span for flex */}
+                          <span className={`w-2 h-2 rounded-full ${tier.colorClass}`}></span> {/* Color dot */}
+                          <span>{tier.name}:</span>
+                        </span>
                         <span className="font-medium">{quantity.toLocaleString()} pcs</span>
                       </li>
                     ) : null;
@@ -458,7 +497,7 @@ const ElixirPointCalculator = React.memo(() => {
 
     if (isNaN(cp) || isNaN(co)) {
       setResult(0);
-      setError('Please enter valid numbers for points and coefficient.');
+      setError('Please enter valid numbers for points and rate.');
       return;
     }
 
@@ -559,6 +598,72 @@ const ElixirPointCalculator = React.memo(() => {
   );
 });
 
+const ElixirAbsorbStats = React.memo(({ inventory, elixirTypesConfig, elixirTiersConfig }) => {
+  const absorbedStats = useMemo(() => {
+    const stats = {};
+    elixirTypesConfig.forEach(typeConfig => {
+      let totalStat = 0;
+      const typeInventory = inventory[typeConfig.name] || {};
+
+      elixirTiersConfig.forEach(tier => {
+        const quantity = typeInventory[tier.name] ?? 0;
+        const statPerElixir = ELIXIR_ABSORB_STATS_CONFIG[typeConfig.name]?.[tier.name];
+
+        if (quantity > 0 && statPerElixir !== undefined) {
+          totalStat += quantity * statPerElixir;
+        }
+      });
+      stats[typeConfig.name] = totalStat;
+    });
+    return stats;
+  }, [inventory, elixirTypesConfig, elixirTiersConfig]);
+
+  // Helper to format stats (e.g., add K for thousands, % for percentages)
+  const formatStat = useCallback((type, value) => {
+    if (type === 'CD' || type === 'TD' || type === 'SD') {
+      return `${(value).toFixed(3)}%`; // Format as percentage with 3 decimal places
+    } else if (type === 'HP') {
+      if (value >= 1000000) { // Check for millions first
+        return `${(value / 1000000).toLocaleString(undefined, { maximumFractionDigits: 1 })}M`; // Format HP as M
+      } else if (value >= 1000) { // Then check for thousands
+        return `${(value / 1000).toLocaleString(undefined, { maximumFractionDigits: 0 })}K`; // Format HP as K
+      }
+      return value.toLocaleString(); // For values less than 1K
+    } else if (type === 'ATK') {
+      if (value >= 1000000) { // Check for millions first
+        return `${(value / 1000000).toLocaleString(undefined, { maximumFractionDigits: 1 })}M`; // Format ATK as M
+      } else if (value >= 1000) { // Then check for thousands
+        return `${(value / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })}K`; // Format ATK as K
+      }
+      return value.toLocaleString(); // For values less than 1K
+    }
+    return value.toLocaleString();
+  }, []);
+  return (
+    <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+      <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4">Elixir Absorb Stats</h2>
+      <div className="flex flex-col gap-3">
+        {elixirTypesConfig.map(typeConfig => (
+          <div
+            key={typeConfig.name}
+            className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-700 shadow-sm"
+          >
+            {/* Left side: Elixir Type Name with Color */}
+            <div className="flex items-center gap-2">
+              <span className={`w-3 h-3 rounded-full ${typeConfig.color}`}></span>
+              <span className="font-semibold text-gray-800 dark:text-gray-200 text-base">{typeConfig.name}</span>
+            </div>
+            {/* Right side: Absorbed Stat Value */}
+            <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
+              {formatStat(typeConfig.name, absorbedStats[typeConfig.name] || 0)}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+});
+
 
 // Main App Component
 const ElixirTrackerApp = () => {
@@ -645,6 +750,21 @@ const ElixirTrackerApp = () => {
     }));
   }, []);
 
+  // Handler for clearing all elixirs
+  const handleClearAllElixirs = useCallback(() => {
+    setInventory(() => {
+      const emptyInventory = {};
+      ELIXIR_TYPES_CONFIG.forEach(typeConfig => {
+        emptyInventory[typeConfig.name] = {};
+        ELIXIR_TIERS_CONFIG.forEach(tier => {
+          emptyInventory[typeConfig.name][tier.name] = 0; // Set all to 0
+        });
+      });
+      return emptyInventory;
+    });
+  }, []);
+
+
   // Handler for clearing all elixirs of a specific type
   const handleClearTypeInventory = useCallback((elixirTypeToClear) => {
     setInventory(prevInventory => {
@@ -660,7 +780,7 @@ const ElixirTrackerApp = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-4 sm:p-6 font-sans">
+    <div className="min-h-screen b dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-4 sm:p-6 font-sans">
       <header className="text-center mb-8">
         <h1 className="text-4xl sm:text-5xl font-extrabold text-indigo-700 dark:text-indigo-300 mb-2 leading-tight">
           Elixir Inventory Tracker
@@ -668,7 +788,7 @@ const ElixirTrackerApp = () => {
         <p className="text-lg text-gray-600 dark:text-gray-400">
           Manage your elixirs by type, track points, and optimize usage for targets.
         </p>
-      </header>
+      </header>d
 
       <main className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Left Column - Inventory Management */}
@@ -678,6 +798,7 @@ const ElixirTrackerApp = () => {
             onInventoryChange={handleInventoryChange}
             totalRefPointsPerType={totalRefPointsPerType}
             onClearTypeInventory={handleClearTypeInventory}
+            onClearAllElixirs={handleClearAllElixirs}
           />
         </section>
 
@@ -686,6 +807,11 @@ const ElixirTrackerApp = () => {
           <TotalSummaryDisplay
             totalOverallRefPoints={totalOverallRefPoints}
             totalRefPointsPerType={totalRefPointsPerType}
+          />
+          <ElixirAbsorbStats
+            inventory={inventory}
+            elixirTypesConfig={ELIXIR_TYPES_CONFIG}
+            elixirTiersConfig={ELIXIR_TIERS_CONFIG}
           />
           <OptimalSelectionCalculator
             inventory={inventory}
