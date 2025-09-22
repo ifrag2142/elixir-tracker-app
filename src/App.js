@@ -791,7 +791,7 @@ const ElixirTrackerApp = () => {
         <p className="text-lg text-gray-600 dark:text-gray-400">
           Created by iFrag.
         </p>
-      </header>d
+      </header>
 
       <main className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Left Column - Inventory Management */}
