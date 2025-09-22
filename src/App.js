@@ -234,7 +234,7 @@ const OptimalSelectionCalculator = React.memo(({ inventory, totalOverallRefPoint
   const [resultElixirs, setResultElixirs] = useState({});
   const [achievedPoints, setAchievedPoints] = useState(0);
   const [message, setMessage] = useState('');
-  const [isCalculating, setIsCalculating] = useState(false);
+  // const [isCalculating, setIsCalculating] = useState(false);
 
   const handleTargetChange = useCallback((e) => {
     const value = e.target.value;
@@ -256,7 +256,7 @@ const OptimalSelectionCalculator = React.memo(({ inventory, totalOverallRefPoint
   }, []);
 
   const calculateOptimalSelection = useCallback(() => {
-    setIsCalculating(true);
+    // setIsCalculating(true);
     setResultElixirs({});
     setAchievedPoints(0);
     setMessage('');
@@ -265,13 +265,13 @@ const OptimalSelectionCalculator = React.memo(({ inventory, totalOverallRefPoint
 
     if (isNaN(target) || target <= 0) {
       setMessage('Please enter a valid positive target reference point.');
-      setIsCalculating(false);
+      // setIsCalculating(false);
       return;
     }
 
     if (selectedElixirTypes.size === 0) {
       setMessage('Please select at least one elixir type for the calculation.');
-      setIsCalculating(false);
+      // setIsCalculating(false);
       return;
     }
 
@@ -298,7 +298,7 @@ const OptimalSelectionCalculator = React.memo(({ inventory, totalOverallRefPoint
 
     if (currentTotalSelectedInventoryRefPoints < target) {
       setMessage(`Target (${target.toLocaleString()}) cannot be reached with the selected elixir types. Max achievable: ${currentTotalSelectedInventoryRefPoints.toLocaleString()}.`);
-      setIsCalculating(false);
+      // setIsCalculating(false);
       return;
     }
 
@@ -351,7 +351,7 @@ const OptimalSelectionCalculator = React.memo(({ inventory, totalOverallRefPoint
     } else {
       setMessage(`Could not reach target. Achieved ${currentAchievedPoints.toLocaleString()} points. Max possible with selected types: ${currentTotalSelectedInventoryRefPoints.toLocaleString()}.`);
     }
-    setIsCalculating(false);
+    // setIsCalculating(false);
   }, [inventory, targetRefPoints, selectedElixirTypes]);
 
   // UseEffect to trigger calculation when inputs change
@@ -788,6 +788,9 @@ const ElixirTrackerApp = () => {
         <p className="text-lg text-gray-600 dark:text-gray-400">
           Manage your elixirs by type, track points, and optimize usage for targets.
         </p>
+        <p className="text-lg text-gray-600 dark:text-gray-400">
+          Created by iFrag.
+        </p>
       </header>d
 
       <main className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -823,6 +826,7 @@ const ElixirTrackerApp = () => {
 
       <footer className="text-center mt-10 text-gray-500 dark:text-gray-600 text-sm py-4">
         &copy; {new Date().getFullYear()} Elixir Tracker. All rights reserved.
+        Created by iFrag2142.
       </footer>
     </div>
   );
