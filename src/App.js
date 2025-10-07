@@ -153,7 +153,7 @@ const ElixirTypeInventory = React.memo(({ elixirTypeConfig, inventoryForType, on
 });
 
 // Elixir Inventory Management Interface Component
-const ElixirInventory = React.memo(({ inventory, onInventoryChange, totalRefPointsPerType, onClearAllElixirs }) => {
+const ElixirInventory = React.memo(({ inventory, onInventoryChange, totalRefPointsPerType, onClearAllElixirs,onClearTypeInventory }) => {
   return (
     <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden mb-6 border border-gray-200 dark:border-gray-700 p-4 max-h-[calc(100vh-200px)] overflow-y-auto">
       <div className="flex items-center justify-between p-4 -mx-4 -mt-4 mb-4 bg-indigo-600 text-white rounded-t-xl">
@@ -173,6 +173,7 @@ const ElixirInventory = React.memo(({ inventory, onInventoryChange, totalRefPoin
           inventoryForType={inventory[typeConfig.name] || {}}
           onInventoryChange={onInventoryChange}
           totalRefPointsForType={totalRefPointsPerType[typeConfig.name] || 0}
+          onClearTypeInventory = {onClearTypeInventory}
         />
       ))}
     </div>
