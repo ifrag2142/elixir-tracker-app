@@ -315,31 +315,67 @@ const OptimalSelectionCalculator = React.memo(({ inventory, totalOverallRefPoint
     const selectedElixirs = {}; // { type: { tier: quantity } }
 
     for (const elixir of availableElixirs) {
-      if (currentAchievedPoints >= target) {
-        break;
-      }
-
-      const refPointsPerElixir = elixir.refPoints;
-      const availableQuantity = elixir.quantity;
-
-      const pointsNeededToMeetTarget = target - currentAchievedPoints;
-
-      let numToTake = 0;
-      if (pointsNeededToMeetTarget > 0) {
-        numToTake = Math.ceil(pointsNeededToMeetTarget / refPointsPerElixir);
-      } else {
-        numToTake = 0;
-      }
-
-      numToTake = Math.min(numToTake, availableQuantity);
-
-      if (numToTake > 0) {
-        if (!selectedElixirs[elixir.type]) {
-          selectedElixirs[elixir.type] = {};
+        if (currentAchievedPoints >= target) {
+            break; // Stop if target is already met or exceeded
         }
-        selectedElixirs[elixir.type][elixir.tier] = (selectedElixirs[elixir.type][elixir.tier] || 0) + numToTake;
-        currentAchievedPoints += numToTake * refPointsPerElixir;
-      }
+        const refPointsPerElixir = elixir.refPoints;
+        const availableQuantity = elixir.quantity;
+        const pointsNeededToMeetTarget = target - currentAchievedPoints;
+        let numToTake = 0;
+        if (pointsNeededToMeetTarget > 0) {
+            numToTake = Math.ceil(pointsNeededToMeetTarget / refPointsPerElixir);
+        }
+        numToTake = Math.min(numToTake, availableQuantity);
+        if (numToTake > 0) {
+            if (!selectedElixirs[elixir.type]) {
+                selectedElixirs[elixir.type] = {};
+            }
+            selectedElixirs[elixir.type][elixir.tier] = (selectedElixirs[elixir.type][elixir.tier] || 0) + numToTake;
+            currentAchievedPoints += numToTake * refPointsPerElixir;
+        }
+    }
+
+        // --- POST-PROCESSING FOR MINIMAL OVERSHOOT ---
+    // Only attempt to minimize overshoot if we actually overshot
+    if (currentAchievedPoints > target) {
+        // Create a temporary flat list of currently selected elixirs, sorted by refPoints descending
+        // This allows us to remove highest value elixirs first to reduce overshoot
+        const currentSelectionFlat = [];
+        ELIXIR_TYPES_CONFIG.forEach(typeConfig => {
+            if (selectedElixirs[typeConfig.name]) {
+                ELIXIR_TIERS_CONFIG.forEach(tierConfig => {
+                    const quantity = selectedElixirs[typeConfig.name][tierConfig.name];
+                    if (quantity > 0) {
+                        currentSelectionFlat.push({
+                            type: typeConfig.name,
+                            tier: tierConfig.name,
+                            refPoints: tierConfig.refPoints,
+                            quantity: quantity
+                        });
+                    }
+                });
+            }
+        });
+        // Sort by refPoints descending to remove highest value elixirs first
+        currentSelectionFlat.sort((a, b) => b.refPoints - a.refPoints);
+        for (const elixirInSelection of currentSelectionFlat) {
+            // How much overshoot do we have?
+            const overshoot = currentAchievedPoints - target;
+            if (overshoot <= 0) break; // No more overshoot to reduce
+            // If this elixir is too large to remove without going below target
+            if (elixirInSelection.refPoints > overshoot && elixirInSelection.quantity === 1) {
+                // If removing the *only* one of this elixir would make us go below target,
+                // and it's also larger than the overshoot, we can't touch it.
+                continue;
+            }
+            // Calculate how many of this elixir we can remove
+            const canRemove = Math.floor(overshoot / elixirInSelection.refPoints);
+            const numToRemove = Math.min(canRemove, elixirInSelection.quantity);
+            if (numToRemove > 0) {
+                selectedElixirs[elixirInSelection.type][elixirInSelection.tier] -= numToRemove;
+                currentAchievedPoints -= numToRemove * elixirInSelection.refPoints;
+            }
+        }
     }
 
     setResultElixirs(selectedElixirs);
