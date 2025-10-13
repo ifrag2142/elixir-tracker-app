@@ -153,7 +153,7 @@ const ElixirTypeInventory = React.memo(({ elixirTypeConfig, inventoryForType, on
 });
 
 // Elixir Inventory Management Interface Component
-const ElixirInventory = React.memo(({ inventory, onInventoryChange, totalRefPointsPerType, onClearAllElixirs,onClearTypeInventory }) => {
+const ElixirInventory = React.memo(({ inventory, onInventoryChange, totalRefPointsPerType, onClearAllElixirs, onClearTypeInventory }) => {
   return (
     <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden mb-6 border border-gray-200 dark:border-gray-700 p-4 max-h-[calc(100vh-200px)] overflow-y-auto">
       <div className="flex items-center justify-between p-4 -mx-4 -mt-4 mb-4 bg-indigo-600 text-white rounded-t-xl">
@@ -173,7 +173,7 @@ const ElixirInventory = React.memo(({ inventory, onInventoryChange, totalRefPoin
           inventoryForType={inventory[typeConfig.name] || {}}
           onInventoryChange={onInventoryChange}
           totalRefPointsForType={totalRefPointsPerType[typeConfig.name] || 0}
-          onClearTypeInventory = {onClearTypeInventory}
+          onClearTypeInventory={onClearTypeInventory}
         />
       ))}
     </div>
@@ -181,20 +181,59 @@ const ElixirInventory = React.memo(({ inventory, onInventoryChange, totalRefPoin
 });
 
 // Total Summary Display Component
-const TotalSummaryDisplay = React.memo(({ totalOverallRefPoints, totalRefPointsPerType }) => {
+const TotalSummaryDisplay = React.memo(({ totalOverallRefPoints, totalRefPointsPerType, inventory }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleOpen = useCallback(() => {
     setIsOpen(prev => !prev);
   }, []);
 
+  // Memoize calculations to avoid re-running on every render if dependencies haven't changed
+  const { atkLegPlusPoints, atkLegMinusPoints, totalTDSDRefPoints } = useMemo(() => {
+    let atkLegPlus = 0;
+    let atkLegMinus = 0;
+    let tdSdSum = 0;
+    // Define tiers considered 'Legendary and above'
+    const legendaryPlusTiers = ['Legendary', 'Immortal', 'Myth', 'Eternal'];
+    for (const typeName in inventory) {
+      if (inventory.hasOwnProperty(typeName)) {
+        const typeInventory = inventory[typeName];
+        for (const tierName in typeInventory) {
+          if (typeInventory.hasOwnProperty(tierName)) {
+            const quantity = typeInventory[tierName];
+            if (quantity > 0) {
+              const tierConfig = ELIXIR_TIERS_CONFIG.find(t => t.name === tierName);
+              const elixirTypeConfig = ELIXIR_TYPES_CONFIG.find(t => t.name === typeName);
+              if (tierConfig && elixirTypeConfig) {
+                const refPoints = quantity * tierConfig.refPoints;
+                if (typeName === 'ATK') {
+                  if (legendaryPlusTiers.includes(tierConfig.name)) {
+                    atkLegPlus += refPoints;
+                  } else {
+                    atkLegMinus += refPoints;
+                  }
+                }
+                // Calculate T/S sum within this loop
+                if (typeName === 'TD' || typeName === 'SD') {
+                  tdSdSum += refPoints;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    return {
+      atkLegPlusPoints: atkLegPlus,
+      atkLegMinusPoints: atkLegMinus,
+      totalTDSDRefPoints: tdSdSum
+    };
+  }, [inventory]);
+
   return (
     <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 text-center border border-gray-200 dark:border-gray-700 mb-6">
       <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">Overall Total Ref Points</h2>
-      <p className="text-5xl font-extrabold text-indigo-600 dark:text-indigo-400 transition-transform duration-300 hover:scale-105 mb-4">
-        {totalOverallRefPoints.toLocaleString()}
-      </p>
-
+      <p className="text-5xl font-extrabold text-indigo-600 dark:text-indigo-400 transition-transform duration-300 hover:scale-105 mb-4">{totalOverallRefPoints.toLocaleString()}</p>
       <button
         className="flex items-center justify-center w-full text-indigo-600 dark:text-indigo-400 font-medium py-2 rounded-md hover:bg-indigo-50 dark:hover:bg-gray-700 transition-colors duration-200"
         onClick={toggleOpen}
@@ -204,7 +243,6 @@ const TotalSummaryDisplay = React.memo(({ totalOverallRefPoints, totalRefPointsP
         {isOpen ? 'Hide Per-Type Summary' : 'Show Per-Type Summary'}
         {isOpen ? <ChevronDown size={18} className="ml-2" /> : <ChevronRight size={18} className="ml-2" />}
       </button>
-
       <div
         id="per-type-summary"
         className={`transition-all duration-300 ease-in-out overflow-hidden ${isOpen ? 'max-h-96 opacity-100 mt-4' : 'max-h-0 opacity-0'}`}
@@ -219,6 +257,28 @@ const TotalSummaryDisplay = React.memo(({ totalOverallRefPoints, totalRefPointsP
               <span className="font-semibold">{totalRefPointsPerType[typeConfig.name]?.toLocaleString() || 0}</span>
             </li>
           ))}
+          <li className="flex justify-between items-center text-gray-700 dark:text-gray-300">
+            <span className="flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full bg-red-700`}></span> {/* Distinct color for Legendary+ ATK */}
+              Atk(Leg+):
+            </span>
+            <span className="font-semibold">{atkLegPlusPoints.toLocaleString()}</span>
+          </li>
+          <li className="flex justify-between items-center text-gray-700 dark:text-gray-300">
+            <span className="flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full bg-red-300`}></span> {/* Distinct color for below Legendary ATK */}
+              Atk(Leg-):
+            </span>
+            <span className="font-semibold">{atkLegMinusPoints.toLocaleString()}</span>
+          </li>
+          {/* New line for T/S */}
+          <li className="flex justify-between items-center text-gray-700 dark:text-gray-300">
+            <span className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
+              T/S:
+            </span>
+            <span className="font-semibold">{totalTDSDRefPoints.toLocaleString()}</span>
+          </li>
         </ul>
       </div>
     </div>
@@ -315,67 +375,67 @@ const OptimalSelectionCalculator = React.memo(({ inventory, totalOverallRefPoint
     const selectedElixirs = {}; // { type: { tier: quantity } }
 
     for (const elixir of availableElixirs) {
-        if (currentAchievedPoints >= target) {
-            break; // Stop if target is already met or exceeded
+      if (currentAchievedPoints >= target) {
+        break; // Stop if target is already met or exceeded
+      }
+      const refPointsPerElixir = elixir.refPoints;
+      const availableQuantity = elixir.quantity;
+      const pointsNeededToMeetTarget = target - currentAchievedPoints;
+      let numToTake = 0;
+      if (pointsNeededToMeetTarget > 0) {
+        numToTake = Math.ceil(pointsNeededToMeetTarget / refPointsPerElixir);
+      }
+      numToTake = Math.min(numToTake, availableQuantity);
+      if (numToTake > 0) {
+        if (!selectedElixirs[elixir.type]) {
+          selectedElixirs[elixir.type] = {};
         }
-        const refPointsPerElixir = elixir.refPoints;
-        const availableQuantity = elixir.quantity;
-        const pointsNeededToMeetTarget = target - currentAchievedPoints;
-        let numToTake = 0;
-        if (pointsNeededToMeetTarget > 0) {
-            numToTake = Math.ceil(pointsNeededToMeetTarget / refPointsPerElixir);
-        }
-        numToTake = Math.min(numToTake, availableQuantity);
-        if (numToTake > 0) {
-            if (!selectedElixirs[elixir.type]) {
-                selectedElixirs[elixir.type] = {};
-            }
-            selectedElixirs[elixir.type][elixir.tier] = (selectedElixirs[elixir.type][elixir.tier] || 0) + numToTake;
-            currentAchievedPoints += numToTake * refPointsPerElixir;
-        }
+        selectedElixirs[elixir.type][elixir.tier] = (selectedElixirs[elixir.type][elixir.tier] || 0) + numToTake;
+        currentAchievedPoints += numToTake * refPointsPerElixir;
+      }
     }
 
-        // --- POST-PROCESSING FOR MINIMAL OVERSHOOT ---
+    // --- POST-PROCESSING FOR MINIMAL OVERSHOOT ---
     // Only attempt to minimize overshoot if we actually overshot
     if (currentAchievedPoints > target) {
-        // Create a temporary flat list of currently selected elixirs, sorted by refPoints descending
-        // This allows us to remove highest value elixirs first to reduce overshoot
-        const currentSelectionFlat = [];
-        ELIXIR_TYPES_CONFIG.forEach(typeConfig => {
-            if (selectedElixirs[typeConfig.name]) {
-                ELIXIR_TIERS_CONFIG.forEach(tierConfig => {
-                    const quantity = selectedElixirs[typeConfig.name][tierConfig.name];
-                    if (quantity > 0) {
-                        currentSelectionFlat.push({
-                            type: typeConfig.name,
-                            tier: tierConfig.name,
-                            refPoints: tierConfig.refPoints,
-                            quantity: quantity
-                        });
-                    }
-                });
+      // Create a temporary flat list of currently selected elixirs, sorted by refPoints descending
+      // This allows us to remove highest value elixirs first to reduce overshoot
+      const currentSelectionFlat = [];
+      ELIXIR_TYPES_CONFIG.forEach(typeConfig => {
+        if (selectedElixirs[typeConfig.name]) {
+          ELIXIR_TIERS_CONFIG.forEach(tierConfig => {
+            const quantity = selectedElixirs[typeConfig.name][tierConfig.name];
+            if (quantity > 0) {
+              currentSelectionFlat.push({
+                type: typeConfig.name,
+                tier: tierConfig.name,
+                refPoints: tierConfig.refPoints,
+                quantity: quantity
+              });
             }
-        });
-        // Sort by refPoints descending to remove highest value elixirs first
-        currentSelectionFlat.sort((a, b) => b.refPoints - a.refPoints);
-        for (const elixirInSelection of currentSelectionFlat) {
-            // How much overshoot do we have?
-            const overshoot = currentAchievedPoints - target;
-            if (overshoot <= 0) break; // No more overshoot to reduce
-            // If this elixir is too large to remove without going below target
-            if (elixirInSelection.refPoints > overshoot && elixirInSelection.quantity === 1) {
-                // If removing the *only* one of this elixir would make us go below target,
-                // and it's also larger than the overshoot, we can't touch it.
-                continue;
-            }
-            // Calculate how many of this elixir we can remove
-            const canRemove = Math.floor(overshoot / elixirInSelection.refPoints);
-            const numToRemove = Math.min(canRemove, elixirInSelection.quantity);
-            if (numToRemove > 0) {
-                selectedElixirs[elixirInSelection.type][elixirInSelection.tier] -= numToRemove;
-                currentAchievedPoints -= numToRemove * elixirInSelection.refPoints;
-            }
+          });
         }
+      });
+      // Sort by refPoints descending to remove highest value elixirs first
+      currentSelectionFlat.sort((a, b) => b.refPoints - a.refPoints);
+      for (const elixirInSelection of currentSelectionFlat) {
+        // How much overshoot do we have?
+        const overshoot = currentAchievedPoints - target;
+        if (overshoot <= 0) break; // No more overshoot to reduce
+        // If this elixir is too large to remove without going below target
+        if (elixirInSelection.refPoints > overshoot && elixirInSelection.quantity === 1) {
+          // If removing the *only* one of this elixir would make us go below target,
+          // and it's also larger than the overshoot, we can't touch it.
+          continue;
+        }
+        // Calculate how many of this elixir we can remove
+        const canRemove = Math.floor(overshoot / elixirInSelection.refPoints);
+        const numToRemove = Math.min(canRemove, elixirInSelection.quantity);
+        if (numToRemove > 0) {
+          selectedElixirs[elixirInSelection.type][elixirInSelection.tier] -= numToRemove;
+          currentAchievedPoints -= numToRemove * elixirInSelection.refPoints;
+        }
+      }
     }
 
     setResultElixirs(selectedElixirs);
@@ -847,6 +907,7 @@ const ElixirTrackerApp = () => {
           <TotalSummaryDisplay
             totalOverallRefPoints={totalOverallRefPoints}
             totalRefPointsPerType={totalRefPointsPerType}
+            inventory={inventory}
           />
           <ElixirAbsorbStats
             inventory={inventory}
