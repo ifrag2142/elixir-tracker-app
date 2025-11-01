@@ -28,9 +28,9 @@ const ELIXIR_TYPES_CONFIG = [
 
 const ELIXIR_ABSORB_STATS_CONFIG = {
   'ATK': {
-    'Common': 100, 'Good': 200, 'Sturdy': 300, 'Rare': 400, 'Perfect': 600,
-    'Scarce': 800, 'Epic': 1200, 'Legendary': 1600, 'Immortal': 2400,
-    'Myth': 4000, 'Eternal': 6000
+    'Common': 215, 'Good': 430, 'Sturdy': 645, 'Rare': 860, 'Perfect': 1075,
+    'Scarce': 1290, 'Epic': 1720, 'Legendary': 2150, 'Immortal': 3010,
+    'Myth': 4300, 'Eternal': 6020
   },
   'CD': {
     'Common': 0.01, 'Good': 0.02, 'Sturdy': 0.03, 'Rare': 0.04, 'Perfect': 0.05,
@@ -48,9 +48,9 @@ const ELIXIR_ABSORB_STATS_CONFIG = {
     'Myth': 0.040, 'Eternal': 0.056
   },
   'HP': {
-    'Common': 10000, 'Good': 20000, 'Sturdy': 30000, 'Rare': 40000, 'Perfect': 60000,
-    'Scarce': 80000, 'Epic': 120000, 'Legendary': 160000, 'Immortal': 240000,
-    'Myth': 400000, 'Eternal': 600000
+    'Common': 21500, 'Good': 43000, 'Sturdy': 64500, 'Rare': 86000, 'Perfect': 107500,
+    'Scarce': 129000, 'Epic': 172000, 'Legendary': 215000, 'Immortal': 301000,
+    'Myth': 430000, 'Eternal': 602000
   }
 };
 
@@ -189,12 +189,8 @@ const TotalSummaryDisplay = React.memo(({ totalOverallRefPoints, totalRefPointsP
   }, []);
 
   // Memoize calculations to avoid re-running on every render if dependencies haven't changed
-  const { atkLegPlusPoints, atkLegMinusPoints, totalTDSDRefPoints } = useMemo(() => {
-    let atkLegPlus = 0;
-    let atkLegMinus = 0;
+  const { totalTDSDRefPoints } = useMemo(() => {
     let tdSdSum = 0;
-    // Define tiers considered 'Legendary and above'
-    const legendaryPlusTiers = ['Legendary', 'Immortal', 'Myth', 'Eternal'];
     for (const typeName in inventory) {
       if (inventory.hasOwnProperty(typeName)) {
         const typeInventory = inventory[typeName];
@@ -206,13 +202,6 @@ const TotalSummaryDisplay = React.memo(({ totalOverallRefPoints, totalRefPointsP
               const elixirTypeConfig = ELIXIR_TYPES_CONFIG.find(t => t.name === typeName);
               if (tierConfig && elixirTypeConfig) {
                 const refPoints = quantity * tierConfig.refPoints;
-                if (typeName === 'ATK') {
-                  if (legendaryPlusTiers.includes(tierConfig.name)) {
-                    atkLegPlus += refPoints;
-                  } else {
-                    atkLegMinus += refPoints;
-                  }
-                }
                 // Calculate T/S sum within this loop
                 if (typeName === 'TD' || typeName === 'SD') {
                   tdSdSum += refPoints;
@@ -224,8 +213,6 @@ const TotalSummaryDisplay = React.memo(({ totalOverallRefPoints, totalRefPointsP
       }
     }
     return {
-      atkLegPlusPoints: atkLegPlus,
-      atkLegMinusPoints: atkLegMinus,
       totalTDSDRefPoints: tdSdSum
     };
   }, [inventory]);
@@ -257,20 +244,6 @@ const TotalSummaryDisplay = React.memo(({ totalOverallRefPoints, totalRefPointsP
               <span className="font-semibold">{totalRefPointsPerType[typeConfig.name]?.toLocaleString() || 0}</span>
             </li>
           ))}
-          <li className="flex justify-between items-center text-gray-700 dark:text-gray-300">
-            <span className="flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full bg-red-700`}></span> {/* Distinct color for Legendary+ ATK */}
-              Atk(Leg+):
-            </span>
-            <span className="font-semibold">{atkLegPlusPoints.toLocaleString()}</span>
-          </li>
-          <li className="flex justify-between items-center text-gray-700 dark:text-gray-300">
-            <span className="flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full bg-red-300`}></span> {/* Distinct color for below Legendary ATK */}
-              Atk(Leg-):
-            </span>
-            <span className="font-semibold">{atkLegMinusPoints.toLocaleString()}</span>
-          </li>
           {/* New line for T/S */}
           <li className="flex justify-between items-center text-gray-700 dark:text-gray-300">
             <span className="flex items-center gap-2">
@@ -761,6 +734,76 @@ const ElixirAbsorbStats = React.memo(({ inventory, elixirTypesConfig, elixirTier
   );
 });
 
+const ElixirStatTargetCalculator = React.memo(() => {
+  const [selectedElixirType, setSelectedElixirType] = useState('ATK'); // Default to ATK
+  const [targetStatValue, setTargetStatValue] = useState('');
+  const [pointsNeeded, setPointsNeeded] = useState(0);
+  // Define conversion rates based on 1 common point = X stat
+  // These should ideally come from a central config or be derived
+  const CONVERSION_RATES = useMemo(() => ({
+    'ATK': ELIXIR_ABSORB_STATS_CONFIG.ATK.Common,   // 215
+    'CD': ELIXIR_ABSORB_STATS_CONFIG.CD.Common,     // 0.01
+    'TD': ELIXIR_ABSORB_STATS_CONFIG.TD.Common,     // 0.001
+    'SD': ELIXIR_ABSORB_STATS_CONFIG.SD.Common,     // 0.002
+    'HP': ELIXIR_ABSORB_STATS_CONFIG.HP.Common,     // 21500
+  }), []);
+  useEffect(() => {
+    const target = parseFloat(targetStatValue);
+    const rate = CONVERSION_RATES[selectedElixirType];
+    if (!isNaN(target) && rate > 0) {
+      setPointsNeeded(target / rate);
+    } else {
+      setPointsNeeded(0);
+    }
+  }, [selectedElixirType, targetStatValue, CONVERSION_RATES]);
+  return (
+    <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+      <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
+        <Calculator size={24} className="text-indigo-600 dark:text-indigo-400" /> Elixir Stat Target Calculator
+      </h2>
+      <div className="mb-4">
+        <label htmlFor="elixirTypeSelect" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Select Elixir Type
+        </label>
+        <select
+          id="elixirTypeSelect"
+          value={selectedElixirType}
+          onChange={(e) => setSelectedElixirType(e.target.value)}
+          className="w-full px-4 py-2 rounded-md bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200 text-base shadow-sm"
+        >
+          {ELIXIR_TYPES_CONFIG.map(typeConfig => (
+            <option key={typeConfig.name} value={typeConfig.name}>
+              {typeConfig.name}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="mb-4">
+        <label htmlFor="targetStatInput" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Target Stat Value/Percentage
+        </label>
+        <input
+          id="targetStatInput"
+          type="number"
+          value={targetStatValue}
+          onChange={(e) => setTargetStatValue(e.target.value)}
+          className="w-full px-4 py-2 rounded-md bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200 text-base shadow-sm"
+          placeholder="e.g., 50000 for ATK, 1.5 for CD"
+        />
+      </div>
+      <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+        <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">Points Needed:</h3>
+        <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+          {pointsNeeded.toLocaleString(undefined, { maximumFractionDigits: 2 })} Elixir Points
+        </p>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          (Based on 1 {selectedElixirType} point = {CONVERSION_RATES[selectedElixirType]} stat value)
+        </p>
+      </div>
+    </div>
+  );
+});
+
 
 // Main App Component
 const ElixirTrackerApp = () => {
@@ -914,11 +957,12 @@ const ElixirTrackerApp = () => {
             elixirTypesConfig={ELIXIR_TYPES_CONFIG}
             elixirTiersConfig={ELIXIR_TIERS_CONFIG}
           />
+          <ElixirStatTargetCalculator />
           <OptimalSelectionCalculator
             inventory={inventory}
             totalOverallRefPoints={totalOverallRefPoints}
           />
-          <ElixirPointCalculator /> {/* New Elixir Point Calculator Component */}
+          <ElixirPointCalculator />
         </section>
       </main>
 
