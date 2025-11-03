@@ -94,8 +94,59 @@ const ElixirInputItem = React.memo(({ elixirType, tier, quantity, onInventoryCha
   );
 });
 
+const ImportModal = ({ isOpen, onClose, onImport, elixirTypeName, elixirTiersConfig }) => {
+  const [textInput, setTextInput] = useState('');
+  if (!isOpen) return null;
+  const handleImportClick = () => {
+    onImport(elixirTypeName, textInput);
+    setTextInput(''); // Clear input after import
+    onClose();
+  };
+  // Assuming the order of tiers in the input text corresponds to elixirTiersConfig
+  const tierNamesInOrder = elixirTiersConfig.map(tier => tier.name).join(', ');
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-96">
+        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4">Import {elixirTypeName} Elixirs</h2>
+        <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
+          Enter quantities for each tier, one per line. The order should be: {tierNamesInOrder}.
+          <br />
+          Example:
+          <pre className="bg-gray-100 dark:bg-gray-700 p-2 rounded-md mt-2 text-xs">
+            0<br />
+            0<br />
+            0<br />
+            16<br />
+            ... (up to Eternal)
+          </pre>
+        </p>
+        <textarea
+          className="w-full h-40 p-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 resize-none mb-4"
+          value={textInput}
+          onChange={(e) => setTextInput(e.target.value)}
+          placeholder="Paste your elixir quantities here..."
+        ></textarea>
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200 rounded-md transition-colors duration-200"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleImportClick}
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition-colors duration-200"
+          >
+            Import
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Elixir Type Inventory Component
-const ElixirTypeInventory = React.memo(({ elixirTypeConfig, inventoryForType, onInventoryChange, totalRefPointsForType, onClearTypeInventory }) => {
+const ElixirTypeInventory = React.memo(({ elixirTypeConfig, inventoryForType, onInventoryChange, totalRefPointsForType, onClearTypeInventory, openImportModal }) => {
   const [isOpen, setIsOpen] = useState(false);
   const toggleOpen = useCallback(() => {
     setIsOpen(prev => !prev);
@@ -125,6 +176,12 @@ const ElixirTypeInventory = React.memo(({ elixirTypeConfig, inventoryForType, on
         >
           Clear
         </button>
+        <button
+          onClick={() => openImportModal(elixirTypeConfig.name)} // Pass the elixir type to the modal handler
+          className="ml-3 px-3 py-1 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium rounded-md transition-colors duration-200"
+        >
+          Import
+        </button>
         <button // Chevron for accordion
           onClick={toggleOpen}
           className="ml-2 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -153,7 +210,7 @@ const ElixirTypeInventory = React.memo(({ elixirTypeConfig, inventoryForType, on
 });
 
 // Elixir Inventory Management Interface Component
-const ElixirInventory = React.memo(({ inventory, onInventoryChange, totalRefPointsPerType, onClearAllElixirs, onClearTypeInventory }) => {
+const ElixirInventory = React.memo(({ inventory, onInventoryChange, totalRefPointsPerType, onClearAllElixirs, onClearTypeInventory, openImportModal }) => {
   return (
     <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl overflow-hidden mb-6 border border-gray-200 dark:border-gray-700 p-4 max-h-[calc(100vh-200px)] overflow-y-auto">
       <div className="flex items-center justify-between p-4 -mx-4 -mt-4 mb-4 bg-indigo-600 text-white rounded-t-xl">
@@ -174,6 +231,7 @@ const ElixirInventory = React.memo(({ inventory, onInventoryChange, totalRefPoin
           onInventoryChange={onInventoryChange}
           totalRefPointsForType={totalRefPointsPerType[typeConfig.name] || 0}
           onClearTypeInventory={onClearTypeInventory}
+          openImportModal={openImportModal}
         />
       ))}
     </div>
@@ -852,6 +910,47 @@ const ElixirTrackerApp = () => {
     return initialInventory;
   });
 
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [currentImportElixirType, setCurrentImportElixirType] = useState(null);
+
+  // Handler to open the modal
+  const openImportModal = useCallback((elixirType) => {
+    setCurrentImportElixirType(elixirType);
+    setIsImportModalOpen(true);
+  }, []);
+  // Handler to close the modal
+  const closeImportModal = useCallback(() => {
+    setIsImportModalOpen(false);
+    setCurrentImportElixirType(null);
+    // setImportText(''); // Clear text when closing
+  }, []);
+  // Handler for importing data
+  const handleImport = useCallback((elixirType, textData) => {
+    // Parse the input text into an array of numbers, defaulting to 0 for invalid entries
+    const lines = textData
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line !== '')
+      .map(line => {
+        const parsed = parseInt(line, 10);
+        return isNaN(parsed) ? 0 : parsed;
+      });
+    setInventory(prevInventory => {
+      const newInventory = { ...prevInventory };
+      // Ensure the top-level elixirType exists in the newInventory
+      if (!newInventory[elixirType]) {
+        newInventory[elixirType] = {}; // Initialize if it doesn't exist
+      }
+      ELIXIR_TIERS_CONFIG.forEach((tier, index) => {
+        const quantity = lines[index] !== undefined ? lines[index] : 0;
+        // This is the crucial part: update only the quantity for the specific tier
+        // and ensure it's stored directly under the tier name, not as an object with 'quantity' key.
+        newInventory[elixirType][tier.name] = quantity; // Store the quantity directly
+      });
+      return newInventory;
+    });
+  }, []);
+
   // Effect to save inventory to localStorage whenever it changes
   useEffect(() => {
     try {
@@ -942,6 +1041,7 @@ const ElixirTrackerApp = () => {
             totalRefPointsPerType={totalRefPointsPerType}
             onClearTypeInventory={handleClearTypeInventory}
             onClearAllElixirs={handleClearAllElixirs}
+            openImportModal={openImportModal}
           />
         </section>
 
@@ -970,6 +1070,13 @@ const ElixirTrackerApp = () => {
         &copy; {new Date().getFullYear()} Elixir Tracker. All rights reserved.
         Created by iFrag2142.
       </footer>
+      <ImportModal
+        isOpen={isImportModalOpen}
+        onClose={closeImportModal}
+        onImport={handleImport}
+        elixirTypeName={currentImportElixirType}
+        elixirTiersConfig={ELIXIR_TIERS_CONFIG}
+      />
     </div>
   );
 };
