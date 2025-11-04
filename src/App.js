@@ -1148,8 +1148,6 @@ const ElixirTrackerApp = () => {
   return (
     <div className="min-h-screen b dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-4 sm:p-6 font-sans">
       <header className="text-center mb-8">
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8697232417760014"
-          crossorigin="anonymous"></script>
         <h1 className="text-4xl sm:text-5xl font-extrabold text-indigo-700 dark:text-indigo-300 mb-2 leading-tight">
           Elixir Inventory Tracker
         </h1>
