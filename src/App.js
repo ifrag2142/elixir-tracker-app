@@ -54,6 +54,31 @@ const ELIXIR_ABSORB_STATS_CONFIG = {
   }
 };
 
+const GAMEPASSES = [
+  { name: 'Auto Craft', robuxPrice: 39 },
+  { name: 'Super Craft', robuxPrice: 199 },
+  { name: 'Double Craft', robuxPrice: 599 },
+  { name: 'Mysterious Letter', robuxPrice: 299 },
+  { name: 'Spatial Ring', robuxPrice: 499 },
+  { name: 'Cornucopia(GDR)', robuxPrice: 599 },
+  { name: 'Compass(ODR)', robuxPrice: 699 },
+  { name: 'Lucky Clover(Exp)', robuxPrice: 799 },
+  { name: 'Enigmatic Mushroom', robuxPrice: 999 },
+  { name: 'Time Candle', robuxPrice: 1499 },
+  { name: 'Sapphire Necklace', robuxPrice: 999 },
+  { name: 'Temporal Hourglass', robuxPrice: 399 },
+  { name: 'Piggy Bank', robuxPrice: 2699 },
+  { name: 'Golden Clover', robuxPrice: 499 },
+  { name: 'Auto Collect', robuxPrice: 799 },
+  { name: 'Mystic Hue Bottle', robuxPrice: 199 },
+  { name: 'Auto Quest', robuxPrice: 499 },
+  { name: 'Chaos Gem', robuxPrice: 499 },
+  { name: 'Mysterious Cube', robuxPrice: 499 },
+  { name: 'Gold Pass', robuxPrice: 599 },
+  { name: 'Lucky Coin', robuxPrice: 699 },
+  { name: 'Guild Medallion', robuxPrice: 599 },
+];
+
 
 // --- Components ---
 
@@ -862,6 +887,108 @@ const ElixirStatTargetCalculator = React.memo(() => {
   );
 });
 
+const GamepassCalculator = React.memo(() => {
+  // State to store quantities for each gamepass
+  // Initialized with 0 for all gamepasses
+  const [gamepassQuantities, setGamepassQuantities] = useState(() => {
+    const initialQuantities = {};
+    GAMEPASSES.forEach(gp => {
+      initialQuantities[gp.name] = 0;
+    });
+    return initialQuantities;
+  });
+  const [robuxToCdRate, setRobuxToCdRate] = useState(''); // User input for the rate
+  // Helper function for safe parsing of numbers
+  const getNumericValue = useCallback((val) => {
+    const num = parseInt(val, 10);
+    return isNaN(num) ? 0 : num;
+  }, []);
+  // Handler for quantity input changes for a specific gamepass
+  const handleQuantityChange = useCallback((gamepassName, value) => {
+    setGamepassQuantities(prev => ({
+      ...prev,
+      [gamepassName]: getNumericValue(value)
+    }));
+  }, [getNumericValue]);
+  // Calculate total Robux price based on quantities
+  const totalRobuxPrice = useMemo(() => {
+    return GAMEPASSES.reduce((sum, gamepass) => {
+      const quantity = gamepassQuantities[gamepass.name] || 0;
+      return sum + (gamepass.robuxPrice * quantity);
+    }, 0);
+  }, [gamepassQuantities]); // Recalculate if any quantity changes
+  // Calculate total CD Elixir points
+  const totalCdElixirPoints = useMemo(() => {
+    const rate = parseFloat(robuxToCdRate);
+    if (isNaN(rate) || rate <= 0) {
+      return 0; // If rate is invalid or zero, return 0 CD points
+    }
+    return totalRobuxPrice * rate;
+  }, [totalRobuxPrice, robuxToCdRate]);
+  // UX functions for input (clear on focus, restore 0 on blur if empty)
+  const [focusedInput, setFocusedInput] = useState(null);
+  const handleFocus = useCallback((id) => setFocusedInput(id), []);
+  const handleBlur = useCallback(() => setFocusedInput(null), []);
+  return (
+    <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+      <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
+        <Calculator size={24} className="text-indigo-600 dark:text-indigo-400" /> Gamepass to CD Elixir Calculator
+      </h2>
+      <div className="mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-4">
+          {GAMEPASSES.map(gamepass => {
+            const inputId = `gamepass-${gamepass.name}-quantity`;
+            const currentQuantity = gamepassQuantities[gamepass.name]; // This will be 0 initially
+            return (
+              <div key={gamepass.name} className="flex items-center justify-between gap-2 p-1">
+                <label htmlFor={inputId} className="flex-grow text-gray-700 dark:text-gray-300 text-sm">
+                  {gamepass.name} ({gamepass.robuxPrice} Rbx)
+                </label>
+                <input
+                  id={inputId}
+                  type="number"
+                  min="0"
+                  value={focusedInput === inputId && currentQuantity === 0 ? '' : currentQuantity}
+                  onChange={(e) => handleQuantityChange(gamepass.name, e.target.value)}
+                  onFocus={() => handleFocus(inputId)}
+                  onBlur={() => handleBlur()}
+                  className="w-12 px-2 py-1 border rounded-md text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div className="mb-6 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <label htmlFor="robuxRate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          1 Robux = ? CD Points
+        </label>
+        <input
+          id="robuxRate"
+          type="number"
+          min="0"
+          step="0.01"
+          value={focusedInput === 'robuxRateInput' && parseFloat(robuxToCdRate) === 0 ? '' : robuxToCdRate}
+          onChange={(e) => setRobuxToCdRate(e.target.value)}
+          onFocus={() => handleFocus('robuxRateInput')}
+          onBlur={() => handleBlur()}
+          className="w-full px-4 py-2 rounded-md bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-200 text-base shadow-sm"
+          placeholder="e.g., 200"
+        />
+      </div>
+      <div className="mt-6 p-4 bg-indigo-50 dark:bg-indigo-900 rounded-lg border border-indigo-200 dark:border-indigo-700">
+        <h3 className="font-semibold text-indigo-800 dark:text-indigo-200 mb-2">Calculation Summary:</h3>
+        <p className="text-lg text-indigo-700 dark:text-indigo-300 mb-1">
+          Total Robux Price: <span className="font-bold">{totalRobuxPrice.toLocaleString()} Robux</span>
+        </p>
+        <p className="text-lg text-indigo-700 dark:text-indigo-300">
+          CD Points Needed: <span className="font-bold">{totalCdElixirPoints.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
+        </p>
+      </div>
+    </div>
+  );
+});
+
 
 // Main App Component
 const ElixirTrackerApp = () => {
@@ -1062,6 +1189,7 @@ const ElixirTrackerApp = () => {
             inventory={inventory}
             totalOverallRefPoints={totalOverallRefPoints}
           />
+          <GamepassCalculator />
           <ElixirPointCalculator />
         </section>
       </main>
