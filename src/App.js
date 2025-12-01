@@ -4,18 +4,19 @@ import { ChevronDown, ChevronRight, Calculator, Info, Divide, X } from 'lucide-r
 
 // Elixir Tier Configuration
 const ELIXIR_TIERS_CONFIG = [
-  { name: 'Common', refPoints: 1, order: 0, colorClass: 'bg-gray-400 dark:bg-gray-600' },
-  { name: 'Good', refPoints: 2, order: 1, colorClass: 'bg-lime-300 dark:bg-lime-500' },
-  { name: 'Sturdy', refPoints: 3, order: 2, colorClass: 'bg-sky-300 dark:bg-sky-500' },
-  { name: 'Rare', refPoints: 4, order: 3, colorClass: 'bg-green-500 dark:bg-green-700' },
-  { name: 'Perfect', refPoints: 5, order: 4, colorClass: 'bg-blue-800 dark:bg-blue-600' },
-  { name: 'Scarce', refPoints: 6, order: 5, colorClass: 'bg-pink-200 dark:bg-pink-400' },
-  { name: 'Epic', refPoints: 8, order: 6, colorClass: 'bg-orange-300 dark:bg-orange-500' },
-  { name: 'Legendary', refPoints: 10, order: 7, colorClass: 'bg-purple-600 dark:bg-purple-800' },
-  { name: 'Immortal', refPoints: 14, order: 8, colorClass: 'bg-pink-500 dark:bg-pink-700' },
-  { name: 'Myth', refPoints: 20, order: 9, colorClass: 'bg-orange-700 dark:bg-orange-900' },
-  { name: 'Eternal', refPoints: 28, order: 10, colorClass: 'bg-yellow-400 dark:bg-yellow-600' },
-].sort((a, b) => a.order - b.order); // Ensure sorted by tier value
+    { name: 'Common', refPoints: 1, order: 0, colorClass: 'bg-gray-400 dark:bg-gray-600' },
+    { name: 'Good', refPoints: 2, order: 1, colorClass: 'bg-lime-300 dark:bg-lime-500' },
+    { name: 'Sturdy', refPoints: 3, order: 2, colorClass: 'bg-sky-300 dark:bg-sky-500' },
+    { name: 'Rare', refPoints: 4, order: 3, colorClass: 'bg-green-500 dark:bg-green-700' },
+    { name: 'Perfect', refPoints: 5, order: 4, colorClass: 'bg-blue-800 dark:bg-blue-600' },
+    { name: 'Scarce', refPoints: 6, order: 5, colorClass: 'bg-pink-200 dark:bg-pink-400' },
+    { name: 'Epic', refPoints: 8, order: 6, colorClass: 'bg-orange-300 dark:bg-orange-500' },
+    { name: 'Legendary', refPoints: 10, order: 7, colorClass: 'bg-purple-600 dark:bg-purple-800' },
+    { name: 'Immortal', refPoints: 14, order: 8, colorClass: 'bg-pink-500 dark:bg-pink-700' },
+    { name: 'Myth', refPoints: 20, order: 9, colorClass: 'bg-orange-700 dark:bg-orange-900' },
+    { name: 'Eternal', refPoints: 28, order: 10, colorClass: 'bg-yellow-400 dark:bg-yellow-600' },
+    { name: 'Celestial', refPoints: 36, order: 11, colorClass: 'bg-red-400 dark:bg-red-600' }, 
+].sort((a, b) => a.order - b.order);
 
 // Elixir Types Configuration
 const ELIXIR_TYPES_CONFIG = [
@@ -27,31 +28,31 @@ const ELIXIR_TYPES_CONFIG = [
 ];
 
 const ELIXIR_ABSORB_STATS_CONFIG = {
-  'ATK': {
-    'Common': 215, 'Good': 430, 'Sturdy': 645, 'Rare': 860, 'Perfect': 1075,
-    'Scarce': 1290, 'Epic': 1720, 'Legendary': 2150, 'Immortal': 3010,
-    'Myth': 4300, 'Eternal': 6020
-  },
-  'CD': {
-    'Common': 0.01, 'Good': 0.02, 'Sturdy': 0.03, 'Rare': 0.04, 'Perfect': 0.05,
-    'Scarce': 0.06, 'Epic': 0.08, 'Legendary': 0.10, 'Immortal': 0.14,
-    'Myth': 0.20, 'Eternal': 0.28
-  },
-  'TD': {
-    'Common': 0.001, 'Good': 0.002, 'Sturdy': 0.003, 'Rare': 0.004, 'Perfect': 0.005,
-    'Scarce': 0.006, 'Epic': 0.008, 'Legendary': 0.010, 'Immortal': 0.014,
-    'Myth': 0.020, 'Eternal': 0.028
-  },
-  'SD': {
-    'Common': 0.002, 'Good': 0.004, 'Sturdy': 0.006, 'Rare': 0.008, 'Perfect': 0.010,
-    'Scarce': 0.012, 'Epic': 0.016, 'Legendary': 0.020, 'Immortal': 0.028,
-    'Myth': 0.040, 'Eternal': 0.056
-  },
-  'HP': {
-    'Common': 21500, 'Good': 43000, 'Sturdy': 64500, 'Rare': 86000, 'Perfect': 107500,
-    'Scarce': 129000, 'Epic': 172000, 'Legendary': 215000, 'Immortal': 301000,
-    'Myth': 430000, 'Eternal': 602000
-  }
+    'ATK': {
+        'Common': 215, 'Good': 430, 'Sturdy': 645, 'Rare': 860, 'Perfect': 1075,
+        'Scarce': 1290, 'Epic': 1720, 'Legendary': 2150, 'Immortal': 3010,
+        'Myth': 4300, 'Eternal': 6020, 'Celestial': 7740
+    },
+    'CD': {
+        'Common': 0.01, 'Good': 0.02, 'Sturdy': 0.03, 'Rare': 0.04, 'Perfect': 0.05,
+        'Scarce': 0.06, 'Epic': 0.08, 'Legendary': 0.10, 'Immortal': 0.14,
+        'Myth': 0.20, 'Eternal': 0.28, 'Celestial': 0.36
+    },
+    'TD': {
+        'Common': 0.001, 'Good': 0.002, 'Sturdy': 0.003, 'Rare': 0.004, 'Perfect': 0.005,
+        'Scarce': 0.006, 'Epic': 0.008, 'Legendary': 0.010, 'Immortal': 0.014,
+        'Myth': 0.020, 'Eternal': 0.028, 'Celestial': 0.036
+    },
+    'SD': {
+        'Common': 0.002, 'Good': 0.004, 'Sturdy': 0.006, 'Rare': 0.008, 'Perfect': 0.010,
+        'Scarce': 0.012, 'Epic': 0.016, 'Legendary': 0.020, 'Immortal': 0.028,
+        'Myth': 0.040, 'Eternal': 0.056, 'Celestial': 0.072
+    },
+    'HP': {
+        'Common': 21500, 'Good': 43000, 'Sturdy': 64500, 'Rare': 86000, 'Perfect': 107500,
+        'Scarce': 129000, 'Epic': 172000, 'Legendary': 215000, 'Immortal': 301000,
+        'Myth': 430000, 'Eternal': 602000, 'Celestial': 774000
+    }
 };
 
 const GAMEPASSES = [
@@ -142,7 +143,7 @@ const ImportModal = ({ isOpen, onClose, onImport, elixirTypeName, elixirTiersCon
             0<br />
             0<br />
             16<br />
-            ... (up to Eternal)
+            ... (up to Celestial)
           </pre>
         </p>
         <textarea
